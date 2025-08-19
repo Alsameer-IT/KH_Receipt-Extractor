@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remittance Receipt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .receipt-container {
+            width: 800px;
+            background: #ffffff;
+            padding: 1rem;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-table td {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .header-table td:nth-child(2) {
+            text-align: right;
+        }
+
+        .red {
+            color: red;
+            font-size: 1rem;
+            font-weight: bold;  
+        }
+        
+        .red1 {
+            color: red;
+            font-size: 150px;
+            font-weight: bold;  
+        }
+       
+        hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 0.5rem 0;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details-table th {
+            text-align: left;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0.5rem 0;
+        }
+        
+        .details-table th:nth-child(1) {
+            color: red;
+        }
+ 
+        .details-table th:nth-child(2) {
+            color: red;
+        }
+
+        .inner-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .inner-table td {
+            padding: 0.2rem 0.3rem;
+            font-size: 0.85rem;
+            border: none;
+        }
+
+        .inner-table td:nth-child(1) {
+            white-space: nowrap;
+        }
+
+        .inner-table td:nth-child(2) {
+            padding: 0 0.3rem;
+        }
+
+        .inner-table td:nth-child(3) {
+            font-weight: bold;
+        }
+
+        .amounts-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .amounts-table td {
+            padding: 0.2rem 0.3rem;
+            font-size: 0.85rem;
+            border: none;
+        }
+
+        .amounts-table td:nth-child(1) {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .amounts-table td:nth-child(2) {
+            padding: 0 0.3rem;
+        }
+
+        .amounts-table td:nth-child(3) {
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .amounts-table tr:last-child td:nth-child(3) {
+            color: red;
+            font-size: 1rem; /* Match font size with Payment Channel */
+        }
+
+        .download-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.8rem;
+            width: 100%;
+            max-width: 280px;
+            margin: 1rem auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .download-btn:hover {
+            background: rgb(166, 32, 32);
+        }
+
+        .download-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .pin-section {
+            display: none;
+        }
+
+        .pin-section.show {
+            display: inline;
+        }
+
+        .header-table td > span:not(:last-child) {
+            margin-right: 1rem; /* Add gap between Payment Channel and PIN */
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+            .download-btn {
+                display: none;
+            }
+            .receipt-container {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container" id="receiptContainer">
+        <table class="header-table">
+            <tr>
+                <td>Receipt No: <span id="receiptNo"></span> <span class="red">Payment Channel:</span> <span id="paymentChannel" class="red"></span> <span class="pin-section" id="pinSection"><span class="red">PIN:</span> <span id="pin" class="red"></span></span></td>
+                <td></td>
+                <td>Date: <span id="date"></span></td>
+            </tr>
+        </table>
+       
+        <table class="details-table">
+            <tr>
+                <th>Sender Details</th>
+                <th>Beneficiary Details</th>
+            </tr>
+            <tr>
+                <td>
+                    <table class="inner-table">
+                        <tr>
+                            <td>Name</td>
+                            <td>:</td>
+                            <td id="senderName"></td>
+                        </tr>
+                        <tr>
+                            <td>Address</td>
+                            <td>:</td>
+                            <td id="address"></td>
+                        </tr>
+                        <tr>
+                            <td>Passport</td>
+                            <td>:</td>
+                            <td id="passport"></td>
+                        </tr>
+                        <tr>
+                            <td>Nationality</td>
+                            <td>:</td>
+                            <td id="nationality"></td>
+                        </tr>
+                        <tr>
+                            <td>Profession</td>
+                            <td>:</td>
+                            <td id="profession"></td>
+                        </tr>
+                        <tr>
+                            <td>Mobile No</td>
+                            <td>:</td>
+                            <td id="senderMobile"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td>
+                    <table class="inner-table">
+                        <tr>
+                            <td>Name</td>
+                            <td>:</td>
+                            <td id="beneficiaryName"></td>
+                        </tr>
+                        <tr>
+                            <td>Bank Name</td>
+                            <td>:</td>
+                            <td id="bankName"></td>
+                        </tr>
+                        <tr>
+                            <td>Account No</td>
+                            <td>:</td>
+                            <td id="accountNo"></td>
+                        </tr>
+                        <tr>
+                            <td>IFSC/Bank Code</td>
+                            <td>:</td>
+                            <td id="ifsc"></td>
+                        </tr>
+                        <tr>
+                            <td>Mobile No</td>
+                            <td>:</td>
+                            <td id="beneficiaryMobile"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <hr>
+        <table width="100%" border="0" class="bottom-table">
+            <tr>
+                <td width="50%" valign="top">
+                    <table class="inner-table">
+                        <tr>
+                            <td>Payout Country</td>
+                            <td>:</td>
+                            <td id="payoutCountry"></td>
+                        </tr>
+                        <tr>
+                            <td>Source</td>
+                            <td>:</td>
+                            <td id="source"></td>
+                        </tr>
+                        <tr>
+                            <td>Purpose</td>
+                            <td>:</td>
+                            <td id="purpose"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="50%" valign="top">
+                    <table class="amounts-table">
+                        <tr>
+                            <td>Payout Amount</td>
+                            <td>:</td>
+                            <td id="payoutAmount"></td>
+                        </tr>
+                        <tr>
+                            <td>Exchange Rate</td>
+                            <td>:</td>
+                            <td id="exchangeRate"></td>
+                        </tr>
+                        <tr>
+                            <td>Pay In Amount</td>
+                            <td>:</td>
+                            <td id="payInAmount"></td>
+                        </tr>
+                        <tr>
+                            <td>Service Charge</td>
+                            <td>:</td>
+                            <td id="serviceCharge"></td>
+                        </tr>
+                        <tr>
+                            <td class="red1">Total Amount</td>
+                            <td class="red1">:</td>
+                            <td class="red1" id="totalAmount"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <hr>
+        <button class="download-btn" id="downloadBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Receipt
+        </button>
+    </div>
+
+    <script>
+        const countryFlagMap = {
+            'india': { flag: 'https://flagcdn.com/w40/in.png', name: 'India', code: 'INDIA', currency: 'INR' },
+            'indian': { flag: 'https://flagcdn.com/w40/in.png', name: 'India', code: 'INDIA', currency: 'INR' },
+            'bangladesh': { flag: 'https://flagcdn.com/w40/bd.png', name: 'Bangladesh', code: 'BANGLADESH', currency: 'BDT' },
+            'china': { flag: 'https://flagcdn.com/w40/cn.png', name: 'China', code: 'CHINA', currency: 'CNY' },
+            'chinese': { flag: 'https://flagcdn.com/w40/cn.png', name: 'China', code: 'CHINA', currency: 'CNY' },
+            'thailand': { flag: 'https://flagcdn.com/w40/th.png', name: 'Thailand', code: 'THAILAND', currency: 'THB' },
+            'thai': { flag: 'https://flagcdn.com/w40/th.png', name: 'Thailand', code: 'THAILAND', currency: 'THB' },
+            'indonesia': { flag: 'https://flagcdn.com/w40/id.png', name: 'Indonesia', code: 'INDONESIA', currency: 'IDR' },
+            'indonesian': { flag: 'https://flagcdn.com/w40/id.png', name: 'Indonesia', code: 'INDONESIA', currency: 'IDR' },
+            'philippines': { flag: 'https://flagcdn.com/w40/ph.png', name: 'Philippines', code: 'PHILIPPINES', currency: 'PHP' },
+            'filipino': { flag: 'https://flagcdn.com/w40/ph.png', name: 'Philippines', code: 'PHILIPPINES', currency: 'PHP' },
+            'pakistan': { flag: 'https://flagcdn.com/w40/pk.png', name: 'Pakistan', code: 'PAKISTAN', currency: 'PKR' },
+            'pakistani': { flag: 'https://flagcdn.com/w40/pk.png', name: 'Pakistan', code: 'PAKISTAN', currency: 'PKR' },
+            'sri lanka': { flag: 'https://flagcdn.com/w40/lk.png', name: 'Sri Lanka', code: 'SRI LANKA', currency: 'LKR' },
+            'srilanka': { flag: 'https://flagcdn.com/w40/lk.png', name: 'Sri Lanka', code: 'SRI LANKA', currency: 'LKR' },
+            'uae': { flag: 'https://flagcdn.com/w40/ae.png', name: 'UAE', code: 'UAE', currency: 'AED' },
+            'united arab emirates': { flag: 'https://flagcdn.com/w40/ae.png', name: 'UAE', code: 'UAE', currency: 'AED' },
+            'japan': { flag: 'https://flagcdn.com/w40/jp.png', name: 'Japan', code: 'JAPAN', currency: 'JPY' },
+            'japanese': { flag: 'https://flagcdn.com/w40/jp.png', name: 'Japan', code: 'JAPAN', currency: 'JPY' },
+            'south korea': { flag: 'https://flagcdn.com/w40/kr.png', name: 'South Korea', code: 'SOUTH KOREA', currency: 'KRW' },
+            'korea': { flag: 'https://flagcdn.com/w40/kr.png', name: 'South Korea', code: 'SOUTH KOREA', currency: 'KRW' },
+            'malaysia': { flag: 'https://flagcdn.com/w40/my.png', name: 'Malaysia', code: 'MALAYSIA', currency: 'MYR' },
+            'malaysian': { flag: 'https://flagcdn.com/w40/my.png', name: 'Malaysia', code: 'MALAYSIA', currency: 'MYR' },
+            'singapore': { flag: 'https://flagcdn.com/w40/sg.png', name: 'Singapore', code: 'SINGAPORE', currency: 'SGD' },
+            'nepal': { flag: 'https://flagcdn.com/w40/np.png', name: 'Nepal', code: 'NEPAL', currency: 'NPR' },
+            'nepali': { flag: 'https://flagcdn.com/w40/np.png', name: 'Nepal', code: 'NEPAL', currency: 'NPR' },
+            'vietnam': { flag: 'https://flagcdn.com/w40/vn.png', name: 'Vietnam', code: 'VIETNAM', currency: 'VND' },
+            'vietnamese': { flag: 'https://flagcdn.com/w40/vn.png', name: 'Vietnam', code: 'VIETNAM', currency: 'VND' },
+            'united kingdom': { flag: 'https://flagcdn.com/w40/gb.png', name: 'United Kingdom', code: 'UNITED KINGDOM', currency: 'GBP' },
+            'uk': { flag: 'https://flagcdn.com/w40/gb.png', name: 'United Kingdom', code: 'UNITED KINGDOM', currency: 'GBP' },
+            'britain': { flag: 'https://flagcdn.com/w40/gb.png', name: 'United Kingdom', code: 'UNITED KINGDOM', currency: 'GBP' },
+            'great britain': { flag: 'https://flagcdn.com/w40/gb.png', name: 'United Kingdom', code: 'UNITED KINGDOM', currency: 'GBP' }
+        };
+
+        // Extract URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const payoutCountryRaw = params.get('payoutCountry') || 'N/A';
+        const payoutCountryNormalized = payoutCountryRaw.toLowerCase().trim()
+            .replace(/\s+/g, ' ')
+            .replace(/^(the\s+)/i, '');
+
+        let countryDetails = countryFlagMap[payoutCountryNormalized];
+
+        if (!countryDetails) {
+            const countryKeys = Object.keys(countryFlagMap);
+            for (const key of countryKeys) {
+                if (payoutCountryNormalized.includes(key) || key.includes(payoutCountryNormalized)) {
+                    countryDetails = countryFlagMap[key];
+                    break;
+                }
+            }
+        }
+
+        if (!countryDetails) {
+            console.warn(`Country not found in countryFlagMap: ${payoutCountryRaw}`);
+            countryDetails = {
+                flag: 'https://flagcdn.com/w40/xx.png',
+                name: payoutCountryRaw.toUpperCase(),
+                code: payoutCountryRaw.toUpperCase(),
+                currency: 'CURRENCY'
+            };
+        }
+
+        const payInCurrency = 'BND'; 
+        const addCommas = (numStr) => {
+            if (!numStr) return '';
+            const parts = numStr.split('.');
+            const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+        };
+
+        const data = {
+            receiptNo: params.get('receiptNo') || '100008601',
+            paymentChannel: params.get('paymentChannel') || 'UPI Payment',
+            date: params.get('date') || new Date().toLocaleDateString('en-GB'),
+            pin: params.get('pin') || '1234', // Default PIN for Cash Pickup
+           
+            senderName: params.get('senderName') || 'issham',
+            address: params.get('address') || '123',
+            passport: params.get('passport') || '000',
+            nationality: params.get('nationality') || 'INDIA',
+            profession: params.get('profession') || 'MANAGER',
+            senderMobile: params.get('senderMobile') || '1234',
+            payoutCountry: countryDetails.code,
+            source: params.get('source') || 'SALARY',
+            purpose: params.get('purpose') || 'FAMILY MAINTENANCE AND SAVINGS',
+            beneficiaryName: params.get('beneficiaryName') || 'issham',
+            bankName: params.get('bankName') || 'INUP101',
+            accountNo: params.get('accountNo') || 'issham@12',
+            ifsc: params.get('ifsc') || 'N/A',
+            beneficiaryMobile: params.get('beneficiaryMobile') || 'N/A',
+            amount: params.get('amount') || '5000',
+            exchangeRate: params.get('exchangeRate') || '1.5',
+            payInAmount: params.get('payInAmount') || '7500',
+            serviceCharge: params.get('serviceCharge') || '100',
+            totalAmount: params.get('totalAmount') || '7600'
+        };
+
+      
+        const payoutAmountNum = data.amount;
+        const payoutAmount = payoutAmountNum !== 'N/A' ? addCommas(payoutAmountNum) + ' ' + countryDetails.currency : 'N/A';
+
+        const exchangeRateParts = data.exchangeRate.split(' ');
+        const exchangeRateNum = exchangeRateParts[0] || 'N/A';
+        const exchangeRate = exchangeRateNum !== 'N/A' ? addCommas(exchangeRateNum) + ' ' + countryDetails.currency : 'N/A';
+
+        const payInAmountParts = data.payInAmount.split(' ');
+        const payInAmountNum = payInAmountParts[0] || 'N/A';
+        const payInAmount = payInAmountNum !== 'N/A' ? addCommas(payInAmountNum) + ' ' + payInCurrency : 'N/A';
+
+        const serviceChargeParts = data.serviceCharge.split(' ');
+        const serviceChargeNum = serviceChargeParts[0] || 'N/A';
+        const serviceCharge = serviceChargeNum !== 'N/A' ? addCommas(serviceChargeNum) + ' ' + payInCurrency : 'N/A';
+
+        const totalAmountParts = data.totalAmount.split(' ');
+        const totalAmountNum = totalAmountParts[0] || 'N/A';
+        const totalAmount = totalAmountNum !== 'N/A' ? addCommas(totalAmountNum) + ' ' + payInCurrency : 'N/A';
+
+        // Populate receipt with uppercase values
+        document.getElementById('receiptNo').textContent = data.receiptNo.toUpperCase();
+        document.getElementById('paymentChannel').textContent = data.paymentChannel;
+        document.getElementById('date').textContent = data.date.toUpperCase();
+      
+        document.getElementById('senderName').textContent = data.senderName.toUpperCase();
+        document.getElementById('address').textContent = data.address.toUpperCase();
+        document.getElementById('passport').textContent = data.passport.toUpperCase();
+        document.getElementById('nationality').textContent = data.nationality.toUpperCase();
+        document.getElementById('profession').textContent = data.profession.toUpperCase();
+        document.getElementById('senderMobile').textContent = data.senderMobile.toUpperCase();
+        document.getElementById('payoutCountry').textContent = data.payoutCountry.toUpperCase();
+        document.getElementById('source').textContent = data.source.toUpperCase();
+        document.getElementById('purpose').textContent = data.purpose.toUpperCase();
+        document.getElementById('beneficiaryName').textContent = data.beneficiaryName.toUpperCase();
+        document.getElementById('bankName').textContent = data.bankName.toUpperCase();
+        document.getElementById('accountNo').textContent = data.accountNo.toUpperCase();
+        document.getElementById('ifsc').textContent = data.ifsc.toUpperCase();
+        document.getElementById('beneficiaryMobile').textContent = data.beneficiaryMobile.toUpperCase();
+        document.getElementById('payoutAmount').textContent = payoutAmount.toUpperCase();
+        document.getElementById('exchangeRate').textContent = exchangeRate.toUpperCase();
+        document.getElementById('payInAmount').textContent = payInAmount.toUpperCase();
+        document.getElementById('serviceCharge').textContent = serviceCharge.toUpperCase();
+        document.getElementById('totalAmount').textContent = totalAmount.toUpperCase();
+        document.getElementById('pin').textContent = data.pin.toUpperCase();
+
+        // Show PIN section if Payment Channel is Cash Pickup
+        if (data.paymentChannel.toUpperCase() === 'CASH PICKUP') {
+            document.getElementById('pinSection').classList.add('show');
+        }
+
+        // Download PDF functionality
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const element = document.getElementById('receiptContainer');
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.style.display = 'none';
+            
+            const opt = {
+                margin: [10, 20, 10, 20],
+                filename: `Remittance_Receipt_${data.receiptNo}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 1.8,
+                    logging: false,
+                    useCORS: true,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'landscape'
+                }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                downloadBtn.style.display = 'flex';
+            });
+        });
+        
+        if (params.get('autoDownload') === 'true') {
+            document.getElementById('downloadBtn').click();
+        }
+    </script>
+</body>
+</html>
