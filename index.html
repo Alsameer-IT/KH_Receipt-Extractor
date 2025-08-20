@@ -122,7 +122,7 @@
                  <img src="https://cdn-icons-png.flaticon.com/512/1034/1034551.png" 
        alt="Global Remittance" 
        style="width: 40px; height: 40px; margin-right: 8px; border: 2px solid #000; border-radius: 4px;">
-                               Remittance Receipt Extractor
+                              KH Receipt Extractor
             </h1>
         </div>
 
@@ -354,7 +354,6 @@ async function extractDataFromPDF(file) {
     let senderSection = senderSectionMatch ? senderSectionMatch[1] : '';
     console.log('Sender Section:', senderSection);
     
-   
     const senderNameMatch = senderSection.match(/Names?: ([^\n]+)/i);
     const senderAddressMatch = senderSection.match(/Address: ([\s\S]*?)(?=(?:National ID|Passport))/i);
     let senderAddress = 'N/A';
@@ -413,25 +412,41 @@ async function extractDataFromPDF(file) {
         if (fieldIndex === 0 && line.match(/Name/i) && !line.match(/:/)) {
             expectingValue = true;
         } else if (fieldIndex === 0 && line.match(/Name:/i)) {
-            const nameMatch = line.match(/Name: ([^\n]+)/i);
+            const nameMatch = line.match(/Name:\s*([^\n]*)/i);
             if (nameMatch) {
-                beneficiaryData.name = nameMatch[1].trim();
+                let potentialName = nameMatch[1].trim();
+                if (potentialName && !potentialName.includes(':')) {
+                    beneficiaryData.name = potentialName;
+                } else {
+                    beneficiaryData.name = 'N/A';
+                }
                 fieldIndex++;
             }
         } else if (fieldIndex === 1 && line.match(/(?:Bank|Bank Name):/i)) {
-            const bankMatch = line.match(/(?:Bank|Bank Name): ([^\n]+)/i); // Fixed regex syntax
+            const bankMatch = line.match(/(?:Bank|Bank Name):\s*([^\n]*)/i);
             if (bankMatch) {
-                beneficiaryData.bankName = bankMatch[1].trim();
+                let potentialBank = bankMatch[1].trim();
+                if (potentialBank && !potentialBank.includes(':')) {
+                    beneficiaryData.bankName = potentialBank;
+                } else {
+                    beneficiaryData.bankName = 'N/A';
+                }
                 fieldIndex++;
             }
         } else if (fieldIndex === 1 && !line.match(/(?:Bank|Bank Name):/i) && line.match(/[A-Z\s]+/)) {
             beneficiaryData.bankName = line.trim();
             fieldIndex++;
         } else if (fieldIndex === 2 && line.match(/Account No:/i)) {
-            const accountMatch = line.match(/Account No: ([^\n]+)/i);
+            const accountMatch = line.match(/Account No:\s*([^\n]*)/i);
             if (accountMatch) {
-                beneficiaryData.accountNo = accountMatch[1].trim();
-                lastAccountNo = beneficiaryData.accountNo;
+                let potentialAccount = accountMatch[1].trim();
+                if (potentialAccount && !potentialAccount.includes(':')) {
+                    beneficiaryData.accountNo = potentialAccount;
+                    lastAccountNo = potentialAccount;
+                } else {
+                    beneficiaryData.accountNo = 'N/A';
+                    lastAccountNo = '';
+                }
                 fieldIndex++;
             }
         } else if (fieldIndex === 2 && line.match(/\d+/)) {
@@ -439,9 +454,11 @@ async function extractDataFromPDF(file) {
             lastAccountNo = beneficiaryData.accountNo;
             fieldIndex++;
         } else if (fieldIndex === 3 && line.match(/(?:IFSC(?:\/Bank)?\s*Code|Branch\s*Code|Bank\s*Code|IFSC):/i)) {
-            const ifscMatch = line.match(/(?:IFSC(?:\/Bank)?\s*Code|Branch\s*Code|Bank\s*Code|IFSC): ([^\n]*)/i); // Fixed regex syntax
+            const ifscMatch = line.match(/(?:IFSC(?:\/Bank)?\s*Code|Branch\s*Code|Bank\s*Code|IFSC):\s*([^\n]*)/i);
             if (ifscMatch) {
-                const potentialIfsc = ifscMatch[1].trim();
+                let potentialIfsc = ifscMatch[1].trim().split(/\s+/);
+                potentialIfsc = potentialIfsc.filter((item, index) => potentialIfsc.indexOf(item) === index); // Remove duplicates
+                potentialIfsc = potentialIfsc.join(' ');
                 console.log(`Found potential IFSC code with label: ${potentialIfsc}`);
                 if (potentialIfsc !== lastAccountNo && potentialIfsc.length > 1 && !potentialIfsc.match(/mobile/i)) {
                     beneficiaryData.ifscCode = potentialIfsc;
@@ -470,7 +487,7 @@ async function extractDataFromPDF(file) {
             }
             fieldIndex++;
         } else if (fieldIndex === 4 && line.match(/Mobile No:/i)) {
-            const mobileMatch = line.match(/Mobile No: ([^\n]*)/i);
+            const mobileMatch = line.match(/Mobile No:\s*([^\n]*)/i);
             if (mobileMatch) {
                 const potentialMobile = mobileMatch[1].trim();
                 console.log(`Found potential Mobile No with label: ${potentialMobile}`);
@@ -493,23 +510,32 @@ async function extractDataFromPDF(file) {
         }
     }
             if (!beneficiaryData.name) {
-                const nameMatch = text.match(/Beneficiary Details[\s\S]*?Name[\s\S]*?: ([^\n]+)/i);
+                const nameMatch = text.match(/Beneficiary Details[\s\S]*?Name[\s\S]*?:\s*([^\n]*)/i);
                 if (nameMatch) {
-                    beneficiaryData.name = nameMatch[1].trim();
+                    let potentialName = nameMatch[1].trim();
+                    beneficiaryData.name = (potentialName && !potentialName.includes(':')) ? potentialName : 'N/A';
                 }
             }
             if (!beneficiaryData.bankName) {
-                const bankMatch = text.match(/Beneficiary Details[\s\S]*?(?:Bank|Bank Name): ([^\n]+)/i);
-                beneficiaryData.bankName = bankMatch ? bankMatch[1].trim() : '';
+                const bankMatch = text.match(/Beneficiary Details[\s\S]*?(?:Bank|Bank Name):\s*([^\n]*)/i);
+                if (bankMatch) {
+                    let potentialBank = bankMatch[1].trim();
+                    beneficiaryData.bankName = (potentialBank && !potentialBank.includes(':')) ? potentialBank : 'N/A';
+                }
             }
             if (!beneficiaryData.accountNo) {
-                const accountMatch = text.match(/Beneficiary Details[\s\S]*?Account No: ([^\n]+)/i);
-                beneficiaryData.accountNo = accountMatch ? accountMatch[1].trim() : '';
+                const accountMatch = text.match(/Beneficiary Details[\s\S]*?Account No:\s*([^\n]*)/i);
+                if (accountMatch) {
+                    let potentialAccount = accountMatch[1].trim();
+                    beneficiaryData.accountNo = (potentialAccount && !potentialAccount.includes(':')) ? potentialAccount : 'N/A';
+                }
             }
             if (beneficiaryData.ifscCode === 'N/A') {
-                const ifscMatch = text.match(/Beneficiary Details[\s\S]*?(?:IFSC(?:\/Bank)?\s*Code|Branch\s*Code|Bank\s*Code|IFSC): ([^\n]*)/i);
+                const ifscMatch = text.match(/Beneficiary Details[\s\S]*?(?:IFSC(?:\/Bank)?\s*Code|Branch\s*Code|Bank\s*Code|IFSC):\s*([^\n]*)/i);
                 if (ifscMatch) {
-                    const potentialIfsc = ifscMatch[1].trim();
+                    let potentialIfsc = ifscMatch[1].trim().split(/\s+/);
+                    potentialIfsc = potentialIfsc.filter((item, index) => potentialIfsc.indexOf(item) === index); // Remove duplicates
+                    potentialIfsc = potentialIfsc.join(' ');
                     console.log(`Fallback IFSC code found: ${potentialIfsc}`);
                     if (potentialIfsc !== beneficiaryData.accountNo && potentialIfsc.length > 1 && !potentialIfsc.match(/mobile/i)) {
                         beneficiaryData.ifscCode = potentialIfsc;
@@ -524,7 +550,7 @@ async function extractDataFromPDF(file) {
                 }
             }
             if (beneficiaryData.mobileNo === 'N/A') {
-                const mobileMatch = text.match(/Beneficiary Details[\s\S]*?Mobile No: ([^\n]*)/i);
+                const mobileMatch = text.match(/Beneficiary Details[\s\S]*?Mobile No:\s*([^\n]*)/i);
                 if (mobileMatch) {
                     const potentialMobile = mobileMatch[1].trim();
                     console.log(`Fallback Mobile No found: ${potentialMobile}`);
@@ -550,11 +576,14 @@ async function extractDataFromPDF(file) {
             
             const sourceMatch = paymentSection.match(/Source: ([^\n]+)/i);
             const purposeMatch = paymentSection.match(/Purpose: ([^\n]+)/i);
-            const payoutAmountMatch = paymentSection.match(/([\d,]+\.\d{2})\s*([A-Z]{3})/i);
-            const exchangeRateMatch = paymentSection.match(/Exchange Rate: ([\d.]+)\s*([A-Z]{3})/i);
-            const payInAmountMatch = paymentSection.match(/Pay In Amount: ([\d,]+\.\d{2})\s*([A-Z]{3})/i);
-            const serviceChargeMatch = paymentSection.match(/Service Charge: ([\d,]+\.\d{2})\s*([A-Z]{3})/i);
-            const totalAmountMatch = paymentSection.match(/Total Amount: ([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            const payoutAmountMatch = paymentSection.match(/Payout\s*Amount\s*:\s*([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            const exchangeRateMatch = paymentSection.match(/Exchange\s*Rate\s*:\s*([\d.]+)\s*([A-Z]{3})/i);
+            const payInAmountMatch = paymentSection.match(/Pay\s*In\s*Amount\s*:\s*([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            const serviceChargeMatch = paymentSection.match(/Service\s*Charge\s*:\s*([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            let totalAmountMatch = paymentSection.match(/Total\s*Amount\s*:\s*([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            if (!totalAmountMatch) {
+                totalAmountMatch = text.match(/Total\s*Amount\s*:\s*([\d,]+\.\d{2})\s*([A-Z]{3})/i);
+            }
             
             const finalIfscCode = beneficiaryData.ifscCode && beneficiaryData.ifscCode.length > 1 && !beneficiaryData.ifscCode.match(/mobile/i) ? beneficiaryData.ifscCode : 'N/A';
             const finalMobileNo = beneficiaryData.mobileNo && /^\d+$/.test(beneficiaryData.mobileNo) ? beneficiaryData.mobileNo : 'N/A';
@@ -566,7 +595,6 @@ async function extractDataFromPDF(file) {
                 pin: pinMatch ? pinMatch[1].trim() : 'N/A',
                 date: dateMatch ? dateMatch[1].trim() : 'N/A',
                 
-               
                 senderName: senderNameMatch ? senderNameMatch[1].trim() : 'N/A',
                 senderAddress: senderAddress,
                 senderAddressRaw: senderAddressRaw,
@@ -606,7 +634,6 @@ async function extractDataFromPDF(file) {
             document.getElementById('paymentChannel').textContent = data.paymentChannel || 'N/A';
             document.getElementById('pin').textContent = data.pin || 'N/A';
 
-            
             document.getElementById('senderName').textContent = data.senderName || 'N/A';
             document.getElementById('senderAddress').innerHTML = (data.senderAddressRaw || 'N/A').replace(/\n/g, '<br>');
             document.getElementById('nationalId').textContent = data.nationalId || 'N/A';
@@ -641,7 +668,6 @@ async function extractDataFromPDF(file) {
                 receiptNo: data.txnNo || 'N/A',
                 paymentChannel: data.paymentChannel || 'N/A',
                 date: data.date || 'N/A',
-               
                 senderName: data.senderName || 'N/A',
                 address: data.senderAddressRaw || 'N/A',
                 passport: data.nationalId || 'N/A',
