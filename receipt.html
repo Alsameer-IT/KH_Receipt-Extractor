@@ -96,14 +96,21 @@
 
         .inner-table td:nth-child(1) {
             white-space: nowrap;
+            font-weight: bold;
         }
 
         .inner-table td:nth-child(2) {
             padding: 0 0.3rem;
         }
-
-        .inner-table td:nth-child(3) {
+        #totalAmount{
             font-weight: bold;
+        }
+         #totalAmount1{
+            font-weight: bold;
+            font-size:medium;
+        }
+        .inner-table td:nth-child(3) {
+            font-weight: normal;
         }
 
         .amounts-table {
@@ -120,6 +127,7 @@
         .amounts-table td:nth-child(1) {
             text-align: right;
             white-space: nowrap;
+            font-weight: bold;
         }
 
         .amounts-table td:nth-child(2) {
@@ -127,13 +135,13 @@
         }
 
         .amounts-table td:nth-child(3) {
-            font-weight: bold;
+            font-weight: normal;
             text-align: left;
         }
 
         .amounts-table tr:last-child td:nth-child(3) {
             color: red;
-            font-size: 1rem; /* Match font size with Payment Channel */
+            font-size: 1rem; 
         }
 
         .download-btn {
@@ -173,7 +181,7 @@
         }
 
         .header-table td > span:not(:last-child) {
-            margin-right: 1rem; /* Add gap between Payment Channel and PIN */
+            margin-right: 1rem; 
         }
 
         @media print {
@@ -315,7 +323,7 @@
                             <td id="serviceCharge"></td>
                         </tr>
                         <tr>
-                            <td class="red1">Total Amount</td>
+                            <td class="red1"  id="totalAmount1">Total Amount</td>
                             <td class="red1">:</td>
                             <td class="red1" id="totalAmount"></td>
                         </tr>
@@ -409,9 +417,8 @@
             receiptNo: params.get('receiptNo') || '100008601',
             paymentChannel: params.get('paymentChannel') || 'UPI Payment',
             date: params.get('date') || new Date().toLocaleDateString('en-GB'),
-            pin: params.get('pin') || '1234', // Default PIN for Cash Pickup
-           
-            senderName: params.get('senderName') || 'issham',
+            pin: params.get('pin') || '1234',
+            senderName: params.get('senderName') || 'N/A',
             address: params.get('address') || '123',
             passport: params.get('passport') || '000',
             nationality: params.get('nationality') || 'INDIA',
